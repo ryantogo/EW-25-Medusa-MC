@@ -74,4 +74,47 @@ targetCam: ... mountForward / mountRear ...
 Paste the Medusa's dump into the "Medusa layout" section below once it's captured.
 
 ## Medusa layout
-_TBD: fill in from the recon dump (seat count and positions, stations, jammer pods, TargetCam mounts)._
+From recon dumps on 2026-10-25 (EW-25 Medusa, `jsonKey=EW1`). Positions are aircraft-local metres: X right, Y up, Z forward.
+
+**Seats.** There are 4 pilot models in two tandem cockpits, all with ejection seats:
+
+| `pilots[i]` | Name | Cockpit | Position | Use |
+| --- | --- | --- | --- | --- |
+| 0 | `pilot` | `cockpit_F` (front) | (-0.40, 0.52, 7.62) | Pilot (vanilla player seat) |
+| 1 | `WSO` | `cockpit_F` (front) | (0.40, 0.52, 7.62) | WSO 1 |
+| 2 | `RearSeater1` | `cockpit_R` (rear) | (-0.44, 0.54, 6.08) | WSO 2 |
+| 3 | `RearSeater2` | `cockpit_R` (rear) | (0.44, 0.54, 6.08) | Spare |
+
+The camera sits at `cockpitViewPoint` = `helmetCamPoint` on the pilot's head, at (-0.37, 1.17, 7.42). That's about (+0.03, +0.65, -0.20) from the pilot model. Applying the same head offset to the other seats gives camera offsets from `cockpitViewPoint` (used by the camera-offset patch):
+
+| Seat | Camera position | Offset from `cockpitViewPoint` |
+| --- | --- | --- |
+| WSO 1 (front right) | ≈ (0.43, 1.17, 7.42) | (+0.80, 0.00, 0.00) |
+| WSO 2 (rear left) | ≈ (-0.41, 1.19, 5.88) | (-0.04, +0.02, -1.54) |
+| Spare (rear right) | ≈ (0.47, 1.19, 5.88) | (+0.84, +0.02, -1.54) |
+
+These are starting values to tune in-game.
+
+**Weapon stations.** There are 3, and the mount counts depend on the loadout:
+
+| Station | Weapon | Mounts | Notes |
+| --- | --- | --- | --- |
+| 0 | 120kw Laser (`Laser`) | 1, nose `laserMount` (0, 0.07, 9.68) | A single mount, so it belongs to one seat |
+| 1 | ARAD-116 (`MountedMissile`) | 2 internal bay (±0.20, -0.46, 0.66), plus 4 on wing pylons (±5.59 / ±6.51, -0.25, -0.63) in the heavier loadout | Anti-radiation missiles. Mounts can be split left/right. |
+| 2 | Radar Jamming Pod (`JammingPod`) | 2 at (±3.98, -0.34, 0.00), plus 2 at (±6.05, -0.36, -0.71) in the heavier loadout | Each pod aims at its own target (`JammingPod.SetTarget`), so splitting them lets each WSO jam a different radar |
+
+Two loadouts were observed: 6 ARAD + 2 pods, and 2 ARAD + 4 pods. Neither has turrets.
+
+**Default station allocation (decided 2026-10-25).**
+Stations are grouped by weapon type, not by hardpoint, so the rules match on what's mounted rather than on station numbers.
+- **Pilot**: no weapon stations while any WSO is seated. Keeps countermeasures, including the built-in `RadarJammer`.
+- **WSO 1** (front right, `pilots[1]`): the station holding the nose `Laser`, plus the **left** jamming pods (local X < 0).
+- **WSO 2** (rear left, `pilots[2]`): every other non-pod station. That's the ARAD-116 pylons and internal bay, or whatever else the loadout puts there. Plus the **right** jamming pods (local X > 0).
+- With only one WSO seated, that WSO gets every station. With none, the pilot has everything (vanilla).
+- The table lives on the server, so a "free pick" mode (claim any free station or pod) can be added later as an option without changing the network design.
+
+**Other systems.**
+- `radar`: `Radar`.
+- One built-in `RadarJammer`. It's a `Countermeasure` (ARH/SARH, draws on the power supply), not a weapon station. It fires through the countermeasure system, so it stays with the **pilot**.
+- TargetCam: one physical camera on `nose` (0, 0.14, 9.18), with mounts `targetCamForward` (0, 0.29, 9.40) and `targetCamRear` (0, 0.71, -7.42). Two of the three remote AI dumps showed `targetCam: none`, so don't assume it exists on aircraft this client doesn't simulate.
+- `GetComponentsInChildren<JammingPod>` on the aircraft found 0 pods even though station 2 lists them, so always reach the pods through `WeaponStation.Weapons`.

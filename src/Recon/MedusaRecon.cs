@@ -67,7 +67,19 @@ namespace MedusaMultiCrew.Recon
             }
 
             sb.AppendLine($"radar: {(aircraft.radar != null ? aircraft.radar.GetType().Name : "none")}");
-            sb.AppendLine($"jammingPods: {aircraft.GetComponentsInChildren<JammingPod>(true).Length} radarJammers: {aircraft.GetComponentsInChildren<RadarJammer>(true).Length}");
+            // Pods aren't found as children of the aircraft transform, so count them from the stations.
+            int jammingPods = 0;
+            foreach (WeaponStation station in aircraft.weaponStations)
+            {
+                foreach (Weapon weapon in station.Weapons)
+                {
+                    if (weapon is JammingPod)
+                    {
+                        jammingPods++;
+                    }
+                }
+            }
+            sb.AppendLine($"jammingPods: {jammingPods} radarJammers: {aircraft.GetComponentsInChildren<RadarJammer>(true).Length}");
 
             Plugin.Log.LogInfo(sb.ToString());
         }
