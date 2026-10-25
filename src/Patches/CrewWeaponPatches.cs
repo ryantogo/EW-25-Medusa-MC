@@ -32,12 +32,66 @@ namespace MedusaMultiCrew.Patches
                 {
                     return true;
                 }
-                if (GameManager.IsLocalAircraft(aircraft) && Time.unscaledTime >= nextNotice)
-                {
-                    nextNotice = Time.unscaledTime + 3f;
-                    SceneSingleton<AircraftActionsReport>.i?.ReportText($"{station.WeaponInfo?.weaponName} is held by {HolderName(aircraft, station.Number)}", 3f);
-                }
+                Notice(aircraft, $"{station.WeaponInfo?.weaponName} is held by {HolderName(aircraft, station.Number)}");
                 return false;
+            }
+        }
+
+        // The pilot's weapon cycling skips stations a WSO holds, so the pilot's HUD never offers
+        // weapons they can't fire.
+        [HarmonyPatch(typeof(WeaponManager), nameof(WeaponManager.NextWeaponStation))]
+        private static class NextWeaponStationPatch
+        {
+            private static bool Prefix(WeaponManager __instance) => CyclePilotStation(__instance, +1);
+        }
+
+        [HarmonyPatch(typeof(WeaponManager), nameof(WeaponManager.PreviousWeaponStation))]
+        private static class PreviousWeaponStationPatch
+        {
+            private static bool Prefix(WeaponManager __instance) => CyclePilotStation(__instance, -1);
+        }
+
+        // Returns false (skip vanilla) when a WSO holds any station of this aircraft.
+        private static bool CyclePilotStation(WeaponManager manager, int delta)
+        {
+            Aircraft aircraft = WeaponManagerAircraft(manager);
+            int count = aircraft != null ? aircraft.weaponStations.Count : 0;
+            bool anyWso = false;
+            for (int i = 0; i < count; i++)
+            {
+                anyWso |= CrewOwner.IsWsoStation(aircraft, i);
+            }
+            if (!anyWso)
+            {
+                return true;
+            }
+
+            int start = manager.currentWeaponStation != null ? manager.currentWeaponStation.Number : 0;
+            for (int step = 1; step <= count; step++)
+            {
+                int index = ((start + delta * step) % count + count) % count;
+                if (!CrewOwner.IsWsoStation(aircraft, index))
+                {
+                    if (index != start || CrewOwner.IsWsoStation(aircraft, start))
+                    {
+                        // Same steps as vanilla NextWeaponStation.
+                        manager.currentWeaponStation = aircraft.weaponStations[index];
+                        aircraft.SetActiveStation((byte)index);
+                        SceneSingleton<CombatHUD>.i?.ShowWeaponStation(manager.currentWeaponStation);
+                    }
+                    return false;
+                }
+            }
+            Notice(aircraft, "Weapons are with your WSO");
+            return false;
+        }
+
+        private static void Notice(Aircraft aircraft, string text)
+        {
+            if (GameManager.IsLocalAircraft(aircraft) && Time.unscaledTime >= nextNotice)
+            {
+                nextNotice = Time.unscaledTime + 3f;
+                SceneSingleton<AircraftActionsReport>.i?.ReportText(text, 3f);
             }
         }
 

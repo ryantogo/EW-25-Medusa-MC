@@ -15,7 +15,7 @@ namespace MedusaMultiCrew
     {
         public const string Guid = "com.ryantogo.medusamulticrew";
         public const string Name = "EW-25 Medusa Multi-Crew";
-        public const string Version = "0.4.0";
+        public const string Version = "0.4.1";
 
         internal static ManualLogSource Log;
         internal static Plugin Instance;

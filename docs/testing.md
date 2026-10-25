@@ -21,7 +21,7 @@ Expected split with both WSOs seated: WSO 1 = Laser plus the left jamming pods, 
 1. Player 1 flies, player 2 is WSO 1, player 3 is WSO 2.
 2. WSO 1 fires the Laser, WSO 2 fires ARADs at a different target. Both should work at the same time.
 3. Both WSOs pick **different radars** and hold Fire on the pods. Each side's pods should point at their own WSO's target.
-4. The pilot presses Fire on any station. Nothing fires, and they see "<weapon> is held by WSO 1" (or WSO 2).
+4. The pilot presses **Next/Previous Weapon**. WSO-held stations are skipped, and on the Medusa (where WSOs hold every station) the pilot sees "Weapons are with your WSO". If the pilot's HUD still shows a WSO station (it was selected before the WSO joined), pressing Fire does nothing and shows "<weapon> is held by WSO 1" (or WSO 2). Test this both with the **host as pilot** and with a **client as pilot**.
 5. The pilot selecting targets on their HUD must not change what the WSOs' weapons are aimed at.
 6. WSO presses **Radar**. The Medusa's radar toggles for everyone.
 7. A WSO leaves. Their stations go to the other WSO. When both leave, the pilot can fire everything again.
