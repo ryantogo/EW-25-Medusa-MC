@@ -15,9 +15,10 @@ namespace MedusaMultiCrew
     {
         public const string Guid = "com.ryantogo.medusamulticrew";
         public const string Name = "EW-25 Medusa Multi-Crew";
-        public const string Version = "0.3.0";
+        public const string Version = "0.4.0";
 
         internal static ManualLogSource Log;
+        internal static Plugin Instance;
 
         internal static ConfigEntry<string> AircraftFilter;
         internal static ConfigEntry<bool> AllowAiAircraft;
@@ -36,6 +37,7 @@ namespace MedusaMultiCrew
         private void Awake()
         {
             Log = Logger;
+            Instance = this;
 
             AircraftFilter = Config.Bind("General", "AircraftFilter", "Medusa",
                 "Comma-separated text matched against the aircraft's unit name or JSON key. Multi-crew only applies to matching aircraft.");
@@ -59,6 +61,7 @@ namespace MedusaMultiCrew
                 "Dump the layout of the aircraft you are currently flying to the BepInEx log.");
 
             CrewSession.Init();
+            CrewOwner.Init();
 
             harmony = new Harmony(Guid);
             harmony.PatchAll(typeof(Plugin).Assembly);
@@ -73,6 +76,7 @@ namespace MedusaMultiCrew
                 CrewNet.Tick();
                 CrewClient.Update();
                 CrewSession.Update();
+                CrewOwner.Tick();
 
                 if (RewiredInput.GetKeyDown(ReconDumpKey.Value))
                 {
@@ -96,10 +100,27 @@ namespace MedusaMultiCrew
             }
         }
 
+        private void OnGUI()
+        {
+            try
+            {
+                CrewPromptOverlay.OnGUI();
+            }
+            catch (System.Exception e)
+            {
+                if (!loggedUpdateError)
+                {
+                    loggedUpdateError = true;
+                    Log.LogError($"OnGUI failed (logged once): {e}");
+                }
+            }
+        }
+
         private void OnDestroy()
         {
             CrewNet.ResetAll();
             CrewSession.Reset();
+            CrewOwner.Reset();
             harmony?.UnpatchSelf();
         }
 

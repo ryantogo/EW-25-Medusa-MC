@@ -66,13 +66,16 @@ namespace MedusaMultiCrew.Net
         public StationAllocation[] Stations;
     }
 
-    // crew -> server -> aircraft owner, at most ~30 Hz while seated.
+    // crew -> server -> aircraft owner: the WSO's current intent, sent on change and as a
+    // heartbeat while seated. The owner stops acting on a seat whose frames go stale.
     public struct CrewControlFrameMsg
     {
         public uint AircraftNetId;
         public byte Seat;
         public byte Station;
         public bool Firing;
+        // Incremented each time the WSO presses Radar; the owner toggles on change.
+        public byte RadarSeq;
         public float AimX;
         public float AimY;
         public float AimZ;

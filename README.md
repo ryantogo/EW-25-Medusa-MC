@@ -8,9 +8,15 @@ A BepInEx plugin for [Nuclear Option](https://store.steampowered.com/app/2168680
 | WSO 1 | Targeting camera, radar/EW, weapon selection, target lists, firing |
 | WSO 2 | Same as WSO 1, with its own weapons and targets |
 
-**Status: early development.** Players can take a WSO seat (pilot accept/decline, server-checked roster, weapon split) and see the Medusa's cockpit and HUD from that seat. Weapons and targeting controls for WSOs aren't in yet, so it isn't playable. See [docs/testing.md](docs/testing.md).
+**Status: early test builds.** Players can take a WSO seat (pilot accept/decline, server-checked roster, weapon split), see the Medusa's cockpit and HUD from that seat, and select targets and fire their own stations with the vanilla controls. See [docs/testing.md](docs/testing.md).
 
 The host and every crew member need the plugin installed.
+
+## Controls
+
+- **Joining:** spectate a friendly Medusa and press **F6** to take a WSO seat. Press F6 again to leave. The pilot gets a **Crew Request** box at the top of the screen and answers with **F7** (accept) or **F8** (decline), or by clicking its buttons. The request expires after 20 s.
+- **As WSO:** the normal game controls apply. **Select** targets on the HUD, **Next/Previous Weapon** cycles through your stations, **Fire** fires, **Radar** toggles the radar.
+- **Default split:** WSO 1 gets the Laser and left jamming pods. WSO 2 gets the ARAD-116 pylons and right pods. The pilot keeps countermeasures.
 
 ## Building
 

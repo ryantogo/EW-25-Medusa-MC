@@ -49,6 +49,17 @@ namespace MedusaMultiCrew.Crew
             nextRequestId = 1;
         }
 
+        public static bool TryGetAllocation(uint aircraftNetId, out StationAllocation[] allocation)
+        {
+            if (crews.TryGetValue(aircraftNetId, out AircraftCrew crew))
+            {
+                allocation = crew.Allocation;
+                return true;
+            }
+            allocation = null;
+            return false;
+        }
+
         // ---- handlers ----
 
         public static void OnHello(INetworkPlayer player, CrewHelloMsg msg)
@@ -69,6 +80,14 @@ namespace MedusaMultiCrew.Crew
             if (!modded.Contains(player))
             {
                 return;
+            }
+            // A repeat press while the pilot is still deciding isn't a new request.
+            foreach (PendingJoin existing in pending.Values)
+            {
+                if (existing.Requester == player)
+                {
+                    return;
+                }
             }
 
             byte seat = msg.Seat;

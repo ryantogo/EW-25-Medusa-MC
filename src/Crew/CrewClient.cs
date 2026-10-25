@@ -28,6 +28,18 @@ namespace MedusaMultiCrew.Crew
         private static readonly HashSet<byte> loggedFrameSeats = new HashSet<byte>();
         private static CrewJoinPromptMsg? prompt;
         private static float promptExpires;
+        private static string promptRequester;
+        // Our own join request still waiting on the pilot (the server times it out at 20 s).
+        private static float joinPendingUntil;
+        private static float joinRequestedAt;
+
+        // For CrewPromptOverlay.
+        public static bool HasPrompt => prompt.HasValue;
+        public static string PromptRequester => promptRequester;
+        public static byte PromptSeat => prompt.HasValue ? prompt.Value.Seat : (byte)0;
+        public static float PromptSecondsLeft => Mathf.Max(0f, promptExpires - Time.unscaledTime);
+        public static bool IsWaitingForPilot => Time.unscaledTime < joinPendingUntil;
+        public static float WaitingSecondsLeft => Mathf.Max(0f, joinRequestedAt + PromptLifetime - Time.unscaledTime);
         private static bool warnedNoMod;
 
         public static void Reset()
@@ -39,6 +51,7 @@ namespace MedusaMultiCrew.Crew
             rosters.Clear();
             loggedFrameSeats.Clear();
             prompt = null;
+            joinPendingUntil = 0f;
             warnedNoMod = false;
         }
 
@@ -63,12 +76,14 @@ namespace MedusaMultiCrew.Crew
             prompt = msg;
             promptExpires = Time.unscaledTime + PromptLifetime;
             string who = PlayerName(msg.RequesterNetId);
+            promptRequester = who;
             Notify($"{who} wants to join as {CrewSeat.Name(msg.Seat)}. {Plugin.AcceptKey.Value} = accept, {Plugin.DeclineKey.Value} = decline", PromptLifetime);
         }
 
         public static void OnJoinResult(INetworkPlayer _, CrewJoinResultMsg msg)
         {
             var result = (JoinResult)msg.Result;
+            joinPendingUntil = 0f;
             Plugin.Log.LogInfo($"[Client] Join result for aircraft {msg.AircraftNetId}: {result}");
             if (result != JoinResult.Accepted)
             {
@@ -184,6 +199,18 @@ namespace MedusaMultiCrew.Crew
                 Notify("You're flying this aircraft");
                 return;
             }
+            if (Time.unscaledTime < joinPendingUntil)
+            {
+                Notify("Still waiting for the pilot to answer...");
+                return;
+            }
+            joinPendingUntil = Time.unscaledTime + PromptLifetime + 5f;
+            // Only a player-flown aircraft makes us wait; AI ones answer at once.
+            joinRequestedAt = followed.Player != null ? Time.unscaledTime : float.NegativeInfinity;
+            if (followed.Player == null)
+            {
+                joinPendingUntil = 0f;
+            }
             // Notify before sending: on a host the server answers inside Send (loopback), and the
             // seat confirmation must be the last message on screen.
             Notify(followed.Player != null ? "Asking the pilot to join..." : "Taking a WSO seat...");
@@ -200,6 +227,14 @@ namespace MedusaMultiCrew.Crew
             CrewNet.SendToServer(new CrewLeaveMsg { AircraftNetId = SeatedAircraftNetId });
             SetLocalSeat(0, 0);
             Notify($"You left your seat ({reason})");
+        }
+
+        public static void AnswerPrompt(bool accept)
+        {
+            if (prompt.HasValue)
+            {
+                Answer(accept);
+            }
         }
 
         private static void Answer(bool accept)

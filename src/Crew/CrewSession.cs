@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using MedusaMultiCrew.Core;
 using MedusaMultiCrew.Net;
 using Mirage;
 using UnityEngine;
@@ -27,6 +28,18 @@ namespace MedusaMultiCrew.Crew
         private static string pendingLeaveReason;
         private static CameraBaseState lastCameraState;
         private static Aircraft subscribedAircraft;
+
+        // WSO intent, streamed to the aircraft owner (CrewOwner applies it).
+        private const float FrameInterval = 0.05f;
+        private const float HeartbeatInterval = 0.25f;
+        private static bool firing;
+        private static byte radarSeq;
+        private static float nextFrame;
+        private static float nextHeartbeat;
+        private static int sentStation = -1;
+        private static bool sentFiring;
+        private static byte sentRadarSeq;
+        private static uint[] sentTargets = new uint[0];
 
         public static void Init()
         {
@@ -78,10 +91,127 @@ namespace MedusaMultiCrew.Crew
             if (rosterChanged)
             {
                 rosterChanged = false;
-                Station = FirstHeldStation();
+                if (Station == null || !SeatHolds(Station.Number))
+                {
+                    Station = FirstHeldStation();
+                }
                 view.Refresh(Aircraft, Station);
             }
             KeepCameraOnAircraft();
+            if (!InSession)
+            {
+                return;
+            }
+            ReadInput();
+            SendControlFrame();
+        }
+
+        private static void ReadInput()
+        {
+            if (RewiredInput.GetActionTimedPressUp("Next Weapon"))
+            {
+                CycleStation(+1);
+            }
+            else if (RewiredInput.GetActionTimedPressUp("Previous Weapon"))
+            {
+                CycleStation(-1);
+            }
+            if (RewiredInput.GetActionTimedPressUp("Radar"))
+            {
+                radarSeq++;
+            }
+            // Same menu safety as vanilla: no firing while the cursor is up.
+            firing = Station != null && RewiredInput.GetAction("Fire") && (!PlayerSettings.menuWeaponSafety || !Cursor.visible);
+        }
+
+        private static void CycleStation(int delta)
+        {
+            var held = new List<WeaponStation>();
+            for (int i = 0; i < Aircraft.weaponStations.Count; i++)
+            {
+                if (SeatHolds(i))
+                {
+                    held.Add(Aircraft.weaponStations[i]);
+                }
+            }
+            if (held.Count < 2)
+            {
+                return;
+            }
+            int index = Mathf.Max(0, held.IndexOf(Station));
+            Station = held[(index + delta + held.Count) % held.Count];
+            view.Refresh(Aircraft, Station);
+        }
+
+        private static void SendControlFrame()
+        {
+            uint[] targets = TargetIds();
+            int station = Station != null ? Station.Number : -1;
+            bool changed = station != sentStation || firing != sentFiring || radarSeq != sentRadarSeq || !SameIds(targets, sentTargets);
+            float now = Time.unscaledTime;
+            if (!(changed && now >= nextFrame) && now < nextHeartbeat)
+            {
+                return;
+            }
+            if (station < 0)
+            {
+                return;
+            }
+            nextFrame = now + FrameInterval;
+            nextHeartbeat = now + HeartbeatInterval;
+            sentStation = station;
+            sentFiring = firing;
+            sentRadarSeq = radarSeq;
+            sentTargets = targets;
+
+            Vector3 aim = CameraStateManager.i != null && CameraStateManager.i.mainCamera != null
+                ? CameraStateManager.i.mainCamera.transform.forward
+                : Aircraft.transform.forward;
+            CrewNet.SendToServer(new CrewControlFrameMsg
+            {
+                AircraftNetId = Aircraft.NetId,
+                Seat = Seat,
+                Station = (byte)station,
+                Firing = firing,
+                RadarSeq = radarSeq,
+                AimX = aim.x,
+                AimY = aim.y,
+                AimZ = aim.z,
+                Targets = targets,
+            });
+        }
+
+        private static uint[] TargetIds()
+        {
+            var ids = new List<uint>();
+            foreach (Unit unit in TargetList)
+            {
+                if (unit != null && !unit.disabled && unit.persistentID.Id != 0 && !ids.Contains(unit.persistentID.Id))
+                {
+                    ids.Add(unit.persistentID.Id);
+                    if (ids.Count >= CrewSerializers.MaxTargets)
+                    {
+                        break;
+                    }
+                }
+            }
+            return ids.ToArray();
+        }
+
+        private static bool SameIds(uint[] a, uint[] b)
+        {
+            if (a.Length != b.Length)
+            {
+                return false;
+            }
+            for (int i = 0; i < a.Length; i++)
+            {
+                if (a[i] != b[i])
+                {
+                    return false;
+                }
+            }
+            return true;
         }
 
         public static void Reset()
@@ -113,6 +243,9 @@ namespace MedusaMultiCrew.Crew
             Aircraft = aircraft;
             Seat = seat;
             TargetList.Clear();
+            firing = false;
+            sentStation = -1;
+            nextHeartbeat = 0f;
             Station = FirstHeldStation();
             rosterChanged = false;
             pendingLeaveReason = null;

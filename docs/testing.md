@@ -4,6 +4,30 @@ Everything logs to `BepInEx/LogOutput.log` with prefixes `[Net]`, `[Server]`, `[
 
 Run tests with only this mod enabled in NOMM. MultiMissile changes loadouts, and SimpleWSO patches the same code.
 
+## Phase 4: WSO weapons and targeting (v0.4.0)
+
+While seated, the WSO uses the **vanilla controls**: **Select** to pick targets on the HUD, **Next/Previous Weapon** to cycle through stations your seat holds, **Fire** to fire, and **Radar** to toggle the radar. The pilot's game carries out each action, so missiles, the laser and jamming show up for everyone exactly as vanilla.
+
+Expected split with both WSOs seated: WSO 1 = Laser plus the left jamming pods, WSO 2 = ARAD-116 plus the right pods. A lone WSO holds everything. The pilot holds nothing while any WSO is aboard.
+
+### A4. One PC, AI Medusa (you're WSO, the host's game fires)
+1. Seat yourself in a friendly AI Medusa as in A3. You're WSO 1 and hold all three stations.
+2. Select an enemy radar or ground target with **Select**, then hold **Fire** on the **Laser**. Expect the beam on the target.
+3. **Next Weapon** to the **ARAD-116**, target an emitting radar, press **Fire**. Expect one missile launch (and a salvo if you've selected several targets).
+4. **Next Weapon** to the **Radar Jamming Pod**, target a radar, hold **Fire**. Expect it to be jammed.
+5. **Radar** is ignored on an AI aircraft (the AI runs its own radar). The log says so.
+
+### B4. Two or three players
+1. Player 1 flies, player 2 is WSO 1, player 3 is WSO 2.
+2. WSO 1 fires the Laser, WSO 2 fires ARADs at a different target. Both should work at the same time.
+3. Both WSOs pick **different radars** and hold Fire on the pods. Each side's pods should point at their own WSO's target.
+4. The pilot presses Fire on any station. Nothing fires, and they see "<weapon> is held by WSO 1" (or WSO 2).
+5. The pilot selecting targets on their HUD must not change what the WSOs' weapons are aimed at.
+6. WSO presses **Radar**. The Medusa's radar toggles for everyone.
+7. A WSO leaves. Their stations go to the other WSO. When both leave, the pilot can fire everything again.
+
+**Known limit:** the game reports firing per station, so while either WSO holds Fire on the pod station, all pods jam. Each pod still jams its own WSO's target, and if a WSO has no target, their pods jam the other WSO's target.
+
 ## Phase 3: crew cockpit view (v0.3.0)
 
 Taking a seat now puts your camera in the Medusa's cockpit at that seat, with the aircraft's HUD. Weapons and targeting controls come in phase 4, so you can look around but can't fire yet.
@@ -54,7 +78,7 @@ If F6–F8 already do something in your control bindings, change them in the con
 ### B. Two players (pilot prompt)
 1. Both players have the mod. The host can be either one. Same faction.
 2. Player 1 flies a Medusa. Player 2 spectates it and presses **F6**.
-3. Player 1 sees "<name> wants to join as WSO 1. F7 = accept, F8 = decline". Press **F7**.
+3. Player 1 sees a **CREW REQUEST** box at the top-center of the screen (pulsing orange border, "<name> wants to join as WSO 1", key hints, a countdown, and Accept/Decline buttons). Player 2 sees a blue **WAITING FOR THE PILOT** box. Player 1 presses **F7** (or clicks Accept).
 4. Expect both logs to show the roster. Player 1 sees "Crew: WSO 1 <name>, WSO 2 empty".
 5. Also try:
    - **F8**: player 2 sees "Couldn't join: the pilot declined".

@@ -15,8 +15,8 @@ namespace MedusaMultiCrew.Net
     internal static class CrewNet
     {
         // Bump Protocol on any wire change. CrewHelloMsg / CrewHelloAckMsg layouts must never change.
-        public const byte Protocol = 1;
-        public const ushort Version = 1;
+        public const byte Protocol = 2;
+        public const ushort Version = 2;
 
         private static NetworkManagerNuclearOption manager;
         private static float nextManagerSearch;

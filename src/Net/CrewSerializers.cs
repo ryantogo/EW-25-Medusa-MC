@@ -97,6 +97,7 @@ namespace MedusaMultiCrew.Net
                 w.WriteByte(m.Seat);
                 w.WriteByte(m.Station);
                 w.WriteBoolean(m.Firing);
+                w.WriteByte(m.RadarSeq);
                 w.WriteSingle(m.AimX);
                 w.WriteSingle(m.AimY);
                 w.WriteSingle(m.AimZ);
@@ -115,6 +116,7 @@ namespace MedusaMultiCrew.Net
                     Seat = r.ReadByte(),
                     Station = r.ReadByte(),
                     Firing = r.ReadBoolean(),
+                    RadarSeq = r.ReadByte(),
                     AimX = r.ReadSingle(),
                     AimY = r.ReadSingle(),
                     AimZ = r.ReadSingle(),

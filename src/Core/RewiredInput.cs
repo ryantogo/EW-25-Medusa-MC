@@ -24,6 +24,17 @@ namespace MedusaMultiCrew.Core
             return keyboard != null && keyboard.GetKeyDown(key);
         }
 
+        // Vanilla actions ("Fire", "Next Weapon", ...), polled the way PilotPlayerState does.
+        public static bool GetAction(string action)
+        {
+            return Ready && GameManager.playerInput != null && GameManager.playerInput.GetButton(action);
+        }
+
+        public static bool GetActionTimedPressUp(string action)
+        {
+            return Ready && GameManager.playerInput != null && GameManager.playerInput.GetButtonTimedPressUp(action, 0f, PlayerSettings.clickDelay);
+        }
+
         private static bool TryMouseButton(KeyCode key, out int button)
         {
             switch (key)

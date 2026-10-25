@@ -70,6 +70,16 @@ Runs on the owner only, using Rewired `ReInput.players.GetPlayer(0)`:
 - **HUD isolation.** `CombatHUD.targetList` and `LaserDesignator.targetList` are swapped for `CrewSession.TargetList`. `WeaponManager` Add/Remove/Clear/Get/SetTargetList and `TargetListChanged` are redirected or blocked during crew HUD selection. `ShowWeaponStation` only accepts stations the seat holds, because the pilot's replicated station changes would otherwise switch the crew HUD.
 - **Leaving.** The session leaves when the camera follows something else, the aircraft is disabled or ejected, or `pilots[0]` dies. `onDisableUnit` only records the intent, and the leave happens in the next `Update`. Exit restores the previous follow and camera state, the map and the HUD, and removes `StatusDisplay`'s `onDisableUnit` handler and the threat-list alarms.
 
+## WSO weapons (phase 4, `src/Crew/CrewOwner.cs`, `src/Patches/CrewWeaponPatches.cs`)
+- **Crew side** (`CrewSession`): Rewired vanilla actions (Next/Previous Weapon, Fire, Radar) drive the seat's selected station, a firing flag and a radar toggle counter. `CrewControlFrameMsg` goes out on change (≤20 Hz) and as a 4 Hz heartbeat, carrying the seat's target persistent IDs.
+- **Owner side** (`CrewOwner`, on the client that simulates the aircraft, or the server for AI): each `Update`, for every station a WSO holds and currently selects (frames fresh within 0.75 s), it:
+  1. Sets that seat's targets with `Aircraft.SetStationTargets`. That's networked and also applies on the owner (`excludeOwner: false`), and it's sent only when the targets change.
+  2. Fires with `WeaponManager.Fire`'s rules: guns and zero-interval weapons via `WeaponStation.Fire`; missiles via `LaunchMount`, or a salvo coroutine when the seat has several targets.
+  3. Toggles the radar with `CmdToggleRadar` on a counter change (player-flown aircraft only).
+- **Split stations (pods).** Vanilla replicates firing per station (`SetFiringState` → the server's `RemoteFireAuto` fires every weapon in it), and `WeaponStation.SetStationTargets` assigns targets to weapons by index. So the owner builds a per-weapon target array, where each pod gets its side's seat target (or the other seat's when its own seat has none), and fires the whole station while either holder fires. Jamming is applied only on the server (`JammingPod.FixedUpdate` checks `Server.Active`).
+- **Blocks** (owner only, bypassed while `CrewOwner.Authorized`): `WeaponManager.Fire` for a WSO-held current station (the pilot gets a "held by WSO n" notice), `WeaponStation.Fire` / `LaunchMount` (AI and other fire paths), and `Aircraft.SetStationTargets` (the pilot's HUD target list).
+- **Build note.** The project compiles against the game's own `Managed` assemblies (`FrameworkPathOverride`), because `SetStationTargets` takes a `ReadOnlySpan`, which only Unity's `mscorlib` provides.
+
 ## Disconnects (`NetworkManagerNuclearOption.OnServerDisconnect`)
 - When a player disconnects, the server sets `unit.Networkdisabled = true` on their aircraft (killing it), removes them from their HQ, and runs `RemoveAllOwnedObject` plus destroying their Player.
 - So when the pilot disconnects, the shared aircraft dies with them. The WSOs have to be unseated cleanly (returned to the map or respawn flow) when the aircraft is disabled. There's no hand-over of the flight controls.
