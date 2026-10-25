@@ -1,0 +1,11 @@
+bin/
+obj/
+.vs/
+.idea/
+*.user
+GameDir.props.user
+
+# Never commit game code or assets (decompiled sources, AssetRipper exports, game DLLs)
+_decompiled/
+*.dll
+*.pdb
