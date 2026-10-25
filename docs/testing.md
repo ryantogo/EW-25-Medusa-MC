@@ -25,6 +25,7 @@ Expected split with both WSOs seated: WSO 1 = Laser plus the left jamming pods, 
 5. The pilot selecting targets on their HUD must not change what the WSOs' weapons are aimed at.
 6. WSO presses **Radar**. The Medusa's radar toggles for everyone.
 7. A WSO leaves. Their stations go to the other WSO. When both leave, the pilot can fire everything again.
+8. **Cockpit visuals (0.4.2).** The pilot's cockpit view shows the WSO models (only the pilot's own model is hidden). The WSO's cockpit shows the **tactical screen** (map/radar MFD), and the stick and throttle move with the pilot's inputs. Known gaps: the targeting-pod camera picture and the cockpit missile-warning lights are still pilot-only.
 
 **Known limit:** the game reports firing per station, so while either WSO holds Fire on the pod station, all pods jam. Each pod still jams its own WSO's target, and if a WSO has no target, their pods jam the other WSO's target.
 

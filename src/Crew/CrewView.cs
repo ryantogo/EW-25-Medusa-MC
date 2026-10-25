@@ -24,6 +24,9 @@ namespace MedusaMultiCrew.Crew
         private List<Unit> restoreLaserTargetList;
         private GameObject statusDisplay;
         private Aircraft statusDisplayAircraft;
+        private Cockpit cockpit;
+        private bool restoreCockpitEnabled;
+        private GameObject tacScreen;
 
         public bool Active { get; private set; }
 
@@ -349,6 +352,9 @@ namespace MedusaMultiCrew.Crew
             {
                 DestroyStatusDisplay();
                 SpawnStatusDisplay(aircraft);
+                SpawnCockpitScreens(aircraft);
+                // Set even if the aircraft has no StatusDisplay, so a refresh doesn't rebuild the screens.
+                statusDisplayAircraft = aircraft;
             }
 
             FlightHud flightHud = FlightHud.i;
@@ -401,8 +407,67 @@ namespace MedusaMultiCrew.Crew
         // (vanilla expects the display to live until the aircraft dies). Destroying ours without
         // removing that handler leaves a dead delegate that throws inside Unit.UnitDisabled,
         // which aborts vanilla teardown so the airframe never despawns.
+        // Cockpit only builds its tactical screen (map/radar MFD, with the target-cam and landing
+        // displays) at spawn, and only for the aircraft the local HUD is bound to, i.e. on the
+        // pilot's game. Build it for the crew seat too, and let the stick/throttle animate.
+        // TacScreen.OnDestroy unsubscribes everything it hooks, and it destroys itself if the
+        // aircraft is disabled, so it doesn't leave vanilla teardown traps.
+        private void SpawnCockpitScreens(Aircraft aircraft)
+        {
+            cockpit = aircraft.GetComponentInChildren<Cockpit>(true);
+            if (cockpit == null)
+            {
+                return;
+            }
+            restoreCockpitEnabled = cockpit.enabled;
+            cockpit.enabled = true;
+
+            if (Reflect.TryGetField(cockpit, "tacScreen", out TacScreen existing) && existing != null)
+            {
+                return;
+            }
+            if (aircraft.targetCam == null)
+            {
+                Plugin.Log.LogInfo("[View] No targeting camera on this client; skipping the cockpit tactical screen");
+                return;
+            }
+            if (!Reflect.TryGetField(cockpit, "tacScreenUIPrefab", out GameObject prefab) || prefab == null)
+            {
+                return;
+            }
+            try
+            {
+                tacScreen = UnityEngine.Object.Instantiate(prefab, cockpit.transform);
+                tacScreen.GetComponent<TacScreen>().Initialize(aircraft, cockpit);
+            }
+            catch (Exception e)
+            {
+                Plugin.Log.LogWarning($"[View] Cockpit tactical screen failed: {e.GetType().Name}: {e.Message}");
+                if (tacScreen != null)
+                {
+                    UnityEngine.Object.Destroy(tacScreen);
+                    tacScreen = null;
+                }
+            }
+        }
+
+        private void DestroyCockpitScreens()
+        {
+            if (tacScreen != null)
+            {
+                UnityEngine.Object.Destroy(tacScreen);
+            }
+            tacScreen = null;
+            if (cockpit != null)
+            {
+                cockpit.enabled = restoreCockpitEnabled;
+            }
+            cockpit = null;
+        }
+
         private void DestroyStatusDisplay()
         {
+            DestroyCockpitScreens();
             if (statusDisplay != null)
             {
                 try

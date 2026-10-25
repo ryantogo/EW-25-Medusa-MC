@@ -20,23 +20,34 @@ namespace MedusaMultiCrew.Patches
             private static bool Prefix(CameraStateManager __instance) => !IsCrewCamera(__instance);
         }
 
-        // Vanilla hides every pilot model in cockpit view. From a crew seat, show the rest of the
-        // crew and hide only the model sitting where our camera is.
+        // Vanilla hides every pilot model in cockpit view. In a multi-crew aircraft, show the rest
+        // of the crew and hide only the model sitting where our camera is: the seat for a crew
+        // member, pilots[0] for the pilot.
         [HarmonyPatch(typeof(CameraCockpitState), nameof(CameraCockpitState.EnterState))]
         private static class EnterStatePatch
         {
             private static void Postfix(CameraStateManager cam)
             {
-                if (!IsCrewCamera(cam))
+                Aircraft aircraft = cam != null ? cam.followingUnit as Aircraft : null;
+                int ownSeat;
+                if (IsCrewCamera(cam))
+                {
+                    ownSeat = CrewSession.Seat;
+                }
+                else if (aircraft != null && GameManager.IsLocalAircraft(aircraft) && Plugin.IsMultiCrewAircraft(aircraft))
+                {
+                    ownSeat = CrewSeat.Pilot;
+                }
+                else
                 {
                     return;
                 }
-                Pilot[] pilots = CrewSession.Aircraft.pilots;
+                Pilot[] pilots = aircraft.pilots;
                 for (int i = 0; i < pilots.Length; i++)
                 {
                     if (pilots[i] != null)
                     {
-                        pilots[i].TogglePilotVisibility(i != CrewSession.Seat);
+                        pilots[i].TogglePilotVisibility(i != ownSeat);
                     }
                 }
             }
