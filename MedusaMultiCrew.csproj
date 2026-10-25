@@ -37,10 +37,37 @@
     <Reference Include="UnityEngine.InputLegacyModule" HintPath="$(ManagedDir)\UnityEngine.InputLegacyModule.dll" Private="false" />
   </ItemGroup>
 
+  <!-- Deploy in NOMM's layout (plugins/<id>/ + meta.json) so the mod manager lists it and can enable/disable it.
+       If NOMM has the mod disabled, update it in disabledPlugins instead of silently re-enabling it. -->
+  <PropertyGroup>
+    <ModId>com.ryantogo.medusamulticrew</ModId>
+    <ModGameVersion>0.34.2</ModGameVersion>
+    <ModDeployDir Condition="Exists('$(BepInExDir)\disabledPlugins\$(ModId)')">$(BepInExDir)\disabledPlugins\$(ModId)</ModDeployDir>
+    <ModDeployDir Condition="'$(ModDeployDir)' == ''">$(BepInExDir)\plugins\$(ModId)</ModDeployDir>
+  </PropertyGroup>
+
   <Target Name="DeployPlugin" AfterTargets="Build" Condition="'$(DeployToGame)' == 'true' And Exists('$(BepInExDir)')">
-    <MakeDir Directories="$(BepInExDir)\plugins\MedusaMultiCrew" />
-    <Copy SourceFiles="$(TargetPath)" DestinationFolder="$(BepInExDir)\plugins\MedusaMultiCrew" />
-    <Message Importance="high" Text="Deployed $(TargetFileName) to $(BepInExDir)\plugins\MedusaMultiCrew" />
+    <PropertyGroup>
+      <ModMetaJson>{
+    "id": "$(ModId)",
+    "artifact": {
+        "fileName": "$(TargetFileName)",
+        "version": "$(Version)",
+        "category": "release",
+        "type": "plugin",
+        "gameVersion": "$(ModGameVersion)",
+        "downloadUrl": "https://github.com/ryantogo/EW-25-Medusa-MC/releases/download/$(Version)/$(TargetFileName)",
+        "hash": null,
+        "extends": null,
+        "dependencies": [],
+        "incompatibilities": []
+    }
+}</ModMetaJson>
+    </PropertyGroup>
+    <MakeDir Directories="$(ModDeployDir)" />
+    <Copy SourceFiles="$(TargetPath)" DestinationFolder="$(ModDeployDir)" />
+    <WriteLinesToFile File="$(ModDeployDir)\meta.json" Lines="$(ModMetaJson)" Overwrite="true" WriteOnlyWhenDifferent="true" />
+    <Message Importance="high" Text="Deployed $(TargetFileName) to $(ModDeployDir)" />
   </Target>
 
 </Project>

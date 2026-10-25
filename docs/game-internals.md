@@ -13,7 +13,7 @@ File references below are relative to that decompiled project.
 ## Ownership and simulation
 - `Aircraft : Unit : NetworkBehaviour` (Mirage). Its owner is `playerRef.Player` (`Aircraft.Player`).
 - Only the owning client simulates physics: `CheckIfLocalSim()` returns `Player.IsLocalPlayer`, or server-active for AI aircraft (`Aircraft.cs` ~1330). Everyone else runs simple physics (`remoteSim`).
-- `SetLocalSim` logs *"Invalid transition: Cannot transition from remote simulation to local simulation after spawn!"* when going remote → local. It still proceeds. This matters for the co-pilot takeover (phase 5).
+- `SetLocalSim` logs *"Invalid transition: Cannot transition from remote simulation to local simulation after spawn!"* when going remote → local. It still proceeds. This is one reason handing the flight controls to another seat is out of scope.
 - `OnAuthorityChanged(false)` on a client turns local sim off.
 - On spawn (`OnStartClient`), the owner calls `SetupLocalPlayerAndUI()`. That runs `Player.AttachToAircraft`, puts `pilots[0]` into `playerState`, creates the status display and HUD extras, sets the camera to follow plus cockpit state, and enables the map. `CombatHUD.SetAircraft(this)` runs for the local player.
 
@@ -30,7 +30,7 @@ Runs on the owner only, using Rewired `ReInput.players.GetPlayer(0)`:
 
 **Seat ownership of inputs (target design):**
 - Pilot: axes, gear, countermeasures, flight assist, eject, engine, nav lights, plus any stations it still owns.
-- WSO / co-pilot: weapons, targeting, TargetCam, radar/EW, jammers.
+- WSO 1 / WSO 2: weapons, targeting, TargetCam, radar/EW, jammers. Each has its own stations and targets.
 
 ## Weapons (`WeaponManager.cs`, `WeaponStation.cs`)
 - Stations are created per `WeaponInfo` (`RegisterWeapon`), and `OrganizeWeaponStations` numbers them `0..n-1`. One station can hold several `Weapon`s on different hardpoints (e.g. a pair of jammer pods).
@@ -56,8 +56,8 @@ Runs on the owner only, using Rewired `ReInput.players.GetPlayer(0)`:
 
 ## Disconnects (`NetworkManagerNuclearOption.OnServerDisconnect`)
 - When a player disconnects, the server sets `unit.Networkdisabled = true` on their aircraft (killing it), removes them from their HQ, and runs `RemoveAllOwnedObject` plus destroying their Player.
-- The phase 5 hook goes here. If crew are aboard, skip disabling, move authority to the co-pilot (or keep the aircraft server-simulated on autopilot until the co-pilot takes over).
-- `Player.SetAircraft` on the server removes authority from the player's previous aircraft and ejects from it. A takeover must avoid that path for the shared aircraft.
+- So when the pilot disconnects, the shared aircraft dies with them. The WSOs have to be unseated cleanly (returned to the map or respawn flow) when the aircraft is disabled. There's no hand-over of the flight controls.
+- `Player.SetAircraft` on the server removes authority from the player's previous aircraft and ejects from it. WSO seating must never call it for the shared aircraft.
 
 ## Recon dump
 The plugin logs the layout of every matching aircraft (config `General.AircraftFilter`, default `Medusa`) when its weapons load. Press **F10** in flight to dump your current aircraft. Output goes to `BepInEx/LogOutput.log`:
