@@ -5,7 +5,7 @@
     <LangVersion>latest</LangVersion>
     <AssemblyName>MedusaMultiCrew</AssemblyName>
     <RootNamespace>MedusaMultiCrew</RootNamespace>
-    <Version>0.1.0</Version>
+    <Version>0.2.0</Version>
     <Nullable>disable</Nullable>
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
     <GenerateDocumentationFile>false</GenerateDocumentationFile>
@@ -29,6 +29,7 @@
     <Reference Include="0Harmony" HintPath="$(BepInExDir)\core\0Harmony.dll" Private="false" />
     <Reference Include="Assembly-CSharp" HintPath="$(ManagedDir)\Assembly-CSharp.dll" Private="false" />
     <Reference Include="Mirage" HintPath="$(ManagedDir)\Mirage.dll" Private="false" />
+    <Reference Include="Mirage.SocketLayer" HintPath="$(ManagedDir)\Mirage.SocketLayer.dll" Private="false" />
     <Reference Include="Rewired_Core" HintPath="$(ManagedDir)\Rewired_Core.dll" Private="false" />
     <Reference Include="UniTask" HintPath="$(ManagedDir)\UniTask.dll" Private="false" />
     <Reference Include="UnityEngine" HintPath="$(ManagedDir)\UnityEngine.dll" Private="false" />

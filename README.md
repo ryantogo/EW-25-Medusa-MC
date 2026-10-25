@@ -8,7 +8,7 @@ A BepInEx plugin for [Nuclear Option](https://store.steampowered.com/app/2168680
 | WSO 1 | Targeting camera, radar/EW, weapon selection, target lists, firing |
 | WSO 2 | Same as WSO 1, with its own weapons and targets |
 
-**Status: early development.** The current build only loads and logs the Medusa's seat and weapon layout (recon). Multi-crew is not playable yet.
+**Status: early development.** Players can take WSO seats over the network (pilot accept/decline, server-checked roster, weapon split), but there's no crew camera or weapon control yet, so it isn't playable. See [docs/testing.md](docs/testing.md).
 
 The host and every crew member need the plugin installed.
 
@@ -39,11 +39,14 @@ Add `-p:DeployToGame=false` to build without copying.
 - `General.AircraftFilter`: which aircraft get multi-crew (default `Medusa`).
 - `Debug.ReconLogging`: log aircraft layouts when weapons load.
 - `Debug.ReconDumpKey`: dump your current aircraft's layout (default F10).
+- `General.AllowAiAircraft`: let players crew AI-flown aircraft (host setting, default on).
+- `Keys.JoinLeaveKey` / `AcceptKey` / `DeclineKey`: join or leave a seat while spectating (F6), and the pilot's accept/decline (F7/F8).
 
 ## Docs
 
 - [Game internals](docs/game-internals.md): how the game handles ownership, seats, weapons, targeting and networking, and where the mod hooks in.
 - [Prior art](docs/prior-art.md): what this mod reuses from SimpleWSO and where it differs.
+- [Testing](docs/testing.md): in-game test steps for each phase.
 
 Don't run this mod together with SimpleWSO. Both patch the same game code.
 

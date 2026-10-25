@@ -3,6 +3,8 @@ using BepInEx.Configuration;
 using BepInEx.Logging;
 using HarmonyLib;
 using MedusaMultiCrew.Core;
+using MedusaMultiCrew.Crew;
+using MedusaMultiCrew.Net;
 using MedusaMultiCrew.Recon;
 using UnityEngine;
 
@@ -13,11 +15,15 @@ namespace MedusaMultiCrew
     {
         public const string Guid = "com.ryantogo.medusamulticrew";
         public const string Name = "EW-25 Medusa Multi-Crew";
-        public const string Version = "0.1.0";
+        public const string Version = "0.2.0";
 
         internal static ManualLogSource Log;
 
         internal static ConfigEntry<string> AircraftFilter;
+        internal static ConfigEntry<bool> AllowAiAircraft;
+        internal static ConfigEntry<KeyCode> JoinLeaveKey;
+        internal static ConfigEntry<KeyCode> AcceptKey;
+        internal static ConfigEntry<KeyCode> DeclineKey;
         internal static ConfigEntry<bool> ReconLogging;
         internal static ConfigEntry<KeyCode> ReconDumpKey;
 
@@ -30,6 +36,14 @@ namespace MedusaMultiCrew
 
             AircraftFilter = Config.Bind("General", "AircraftFilter", "Medusa",
                 "Comma-separated text matched against the aircraft's unit name or JSON key. Multi-crew only applies to matching aircraft.");
+            AllowAiAircraft = Config.Bind("General", "AllowAiAircraft", true,
+                "Let players crew AI-flown aircraft (no pilot to ask). Host setting.");
+            JoinLeaveKey = Config.Bind("Keys", "JoinLeaveKey", KeyCode.F6,
+                "While spectating a friendly Medusa: ask to join as WSO. While seated: leave the seat.");
+            AcceptKey = Config.Bind("Keys", "AcceptKey", KeyCode.F7,
+                "Pilot: accept a crew join request.");
+            DeclineKey = Config.Bind("Keys", "DeclineKey", KeyCode.F8,
+                "Pilot: decline a crew join request.");
             ReconLogging = Config.Bind("Debug", "ReconLogging", true,
                 "Log the seat, weapon station and camera layout of matching aircraft when their weapons load.");
             ReconDumpKey = Config.Bind("Debug", "ReconDumpKey", KeyCode.F10,
@@ -45,15 +59,19 @@ namespace MedusaMultiCrew
         {
             try
             {
+                CrewNet.Tick();
+                CrewClient.Update();
+
                 if (RewiredInput.GetKeyDown(ReconDumpKey.Value))
                 {
-                    Aircraft aircraft = GameManager.GetLocalAircraft(out Aircraft local) ? local : null;
-                    if (aircraft == null)
+                    if (GameManager.GetLocalAircraft(out Aircraft aircraft) && aircraft != null)
+                    {
+                        MedusaRecon.Dump(aircraft, "hotkey");
+                    }
+                    else
                     {
                         Log.LogInfo("Recon dump: you are not flying an aircraft");
-                        return;
                     }
-                    MedusaRecon.Dump(aircraft, "hotkey");
                 }
             }
             catch (System.Exception e)
@@ -68,6 +86,7 @@ namespace MedusaMultiCrew
 
         private void OnDestroy()
         {
+            CrewNet.ResetAll();
             harmony?.UnpatchSelf();
         }
 
