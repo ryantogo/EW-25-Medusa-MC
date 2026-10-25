@@ -2,6 +2,7 @@ using BepInEx;
 using BepInEx.Configuration;
 using BepInEx.Logging;
 using HarmonyLib;
+using MedusaMultiCrew.Core;
 using MedusaMultiCrew.Recon;
 using UnityEngine;
 
@@ -18,9 +19,10 @@ namespace MedusaMultiCrew
 
         internal static ConfigEntry<string> AircraftFilter;
         internal static ConfigEntry<bool> ReconLogging;
-        internal static ConfigEntry<KeyboardShortcut> ReconDumpKey;
+        internal static ConfigEntry<KeyCode> ReconDumpKey;
 
         private Harmony harmony;
+        private bool loggedUpdateError;
 
         private void Awake()
         {
@@ -30,7 +32,7 @@ namespace MedusaMultiCrew
                 "Comma-separated text matched against the aircraft's unit name or JSON key. Multi-crew only applies to matching aircraft.");
             ReconLogging = Config.Bind("Debug", "ReconLogging", true,
                 "Log the seat, weapon station and camera layout of matching aircraft when their weapons load.");
-            ReconDumpKey = Config.Bind("Debug", "ReconDumpKey", new KeyboardShortcut(KeyCode.F10),
+            ReconDumpKey = Config.Bind("Debug", "ReconDumpKey", KeyCode.F10,
                 "Dump the layout of the aircraft you are currently flying to the BepInEx log.");
 
             harmony = new Harmony(Guid);
@@ -41,15 +43,26 @@ namespace MedusaMultiCrew
 
         private void Update()
         {
-            if (ReconDumpKey.Value.IsDown())
+            try
             {
-                Aircraft aircraft = GameManager.GetLocalAircraft(out Aircraft local) ? local : null;
-                if (aircraft == null)
+                if (RewiredInput.GetKeyDown(ReconDumpKey.Value))
                 {
-                    Log.LogInfo("Recon dump: you are not flying an aircraft");
-                    return;
+                    Aircraft aircraft = GameManager.GetLocalAircraft(out Aircraft local) ? local : null;
+                    if (aircraft == null)
+                    {
+                        Log.LogInfo("Recon dump: you are not flying an aircraft");
+                        return;
+                    }
+                    MedusaRecon.Dump(aircraft, "hotkey");
                 }
-                MedusaRecon.Dump(aircraft, "hotkey");
+            }
+            catch (System.Exception e)
+            {
+                if (!loggedUpdateError)
+                {
+                    loggedUpdateError = true;
+                    Log.LogError($"Update failed (logged once): {e}");
+                }
             }
         }
 

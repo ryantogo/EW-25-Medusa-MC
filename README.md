@@ -43,6 +43,13 @@ Add `-p:DeployToGame=false` to build without copying.
 ## Docs
 
 - [Game internals](docs/game-internals.md): how the game handles ownership, seats, weapons, targeting and networking, and where the mod hooks in.
+- [Prior art](docs/prior-art.md): what this mod reuses from SimpleWSO and where it differs.
+
+Don't run this mod together with SimpleWSO. Both patch the same game code.
+
+## Credits
+
+Parts of the input, networking, crew view and weapon-firing code are adapted from [SimpleWSO](https://github.com/Motmir/SimpleWSO) by Bongus and Motmir, released under CC0.
 
 ## License
 

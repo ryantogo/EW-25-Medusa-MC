@@ -60,7 +60,7 @@ Runs on the owner only, using Rewired `ReInput.players.GetPlayer(0)`:
 - `Player.SetAircraft` on the server removes authority from the player's previous aircraft and ejects from it. WSO seating must never call it for the shared aircraft.
 
 ## Recon dump
-The plugin logs the layout of every matching aircraft (config `General.AircraftFilter`, default `Medusa`) when its weapons load. Press **F10** in flight to dump your current aircraft. Output goes to `BepInEx/LogOutput.log`:
+The plugin logs the layout of every matching aircraft (config `General.AircraftFilter`, default `Medusa`) when its weapons load. Press **F10** in flight (polled through Rewired) to dump your current aircraft. Output goes to `BepInEx/LogOutput.log`:
 
 ```
 === Recon (weapons loaded): <unitName> [key=<jsonKey>] ... ===

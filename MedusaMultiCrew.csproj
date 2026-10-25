@@ -29,6 +29,7 @@
     <Reference Include="0Harmony" HintPath="$(BepInExDir)\core\0Harmony.dll" Private="false" />
     <Reference Include="Assembly-CSharp" HintPath="$(ManagedDir)\Assembly-CSharp.dll" Private="false" />
     <Reference Include="Mirage" HintPath="$(ManagedDir)\Mirage.dll" Private="false" />
+    <Reference Include="Rewired_Core" HintPath="$(ManagedDir)\Rewired_Core.dll" Private="false" />
     <Reference Include="UniTask" HintPath="$(ManagedDir)\UniTask.dll" Private="false" />
     <Reference Include="UnityEngine" HintPath="$(ManagedDir)\UnityEngine.dll" Private="false" />
     <Reference Include="UnityEngine.CoreModule" HintPath="$(ManagedDir)\UnityEngine.CoreModule.dll" Private="false" />
