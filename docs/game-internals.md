@@ -62,6 +62,14 @@ Runs on the owner only, using Rewired `ReInput.players.GetPlayer(0)`:
 - **Control frames.** `CrewControlFrameMsg` is accepted only from the seated player, for a station their seat holds, and at most every 20 ms. It's forwarded to the owner only, or raised on the server for AI aircraft (`CrewNet.ControlFrameReceived`). Phase 4 applies them and must sanitize the aim vector (NaN or zero).
 - **Upkeep.** `CrewServer.Tick` (every 0.25 s) times out requests and disbands crews whose aircraft is gone, disabled, ejected or has a dead pilot, or whose owner changed. A disconnect removes the player's seat, or disbands the crew if the player was the pilot.
 
+## Crew view (phase 3, `src/Crew/CrewSession.cs`, `CrewView.cs`, `src/Patches`)
+- `CrewClient.LocalSeatChanged` is queued and applied in `Update`. `CrewSession` then enters `CrewView`: it binds `CombatHUD`, follows the aircraft, switches to `cockpitState`, and spawns a UI-only `StatusDisplay`, FlightHud and minimap.
+- **Camera position.** `CameraCockpitState.UpdateState` puts the pivot at `cockpitViewPoint` (the pilot's head bone). A postfix shifts it by `seatWorld - cockpitViewPoint.position`, keeping vanilla's inertia and shake offsets. The postfix is skipped when vanilla returns early (`!GameManager.flightControlsEnabled` or `pilots[0].dead`), so the offset never accumulates.
+- **Pilot models.** Vanilla hides all of them in cockpit view. An `EnterState` postfix shows them all except `pilots[seat]`.
+- **Rattle.** `FixedUpdateState` computes G-shake, inertia and the rattle sound from cockpit velocity changes. On a remote-sim aircraft that velocity jumps with every snapshot, so a prefix skips it there and only decays event shake.
+- **HUD isolation.** `CombatHUD.targetList` and `LaserDesignator.targetList` are swapped for `CrewSession.TargetList`. `WeaponManager` Add/Remove/Clear/Get/SetTargetList and `TargetListChanged` are redirected or blocked during crew HUD selection. `ShowWeaponStation` only accepts stations the seat holds, because the pilot's replicated station changes would otherwise switch the crew HUD.
+- **Leaving.** The session leaves when the camera follows something else, the aircraft is disabled or ejected, or `pilots[0]` dies. `onDisableUnit` only records the intent, and the leave happens in the next `Update`. Exit restores the previous follow and camera state, the map and the HUD, and removes `StatusDisplay`'s `onDisableUnit` handler and the threat-list alarms.
+
 ## Disconnects (`NetworkManagerNuclearOption.OnServerDisconnect`)
 - When a player disconnects, the server sets `unit.Networkdisabled = true` on their aircraft (killing it), removes them from their HQ, and runs `RemoveAllOwnedObject` plus destroying their Player.
 - So when the pilot disconnects, the shared aircraft dies with them. The WSOs have to be unseated cleanly (returned to the map or respawn flow) when the aircraft is disabled. There's no hand-over of the flight controls.

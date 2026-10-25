@@ -1,8 +1,28 @@
 # Testing
 
-Everything logs to `BepInEx/LogOutput.log` with prefixes `[Net]`, `[Server]` and `[Client]`. On-screen messages appear in the game's action report text (the same place as "All Guns Linked").
+Everything logs to `BepInEx/LogOutput.log` with prefixes `[Net]`, `[Server]`, `[Client]`, `[Session]` and `[View]`. On-screen messages appear in the game's action report text (the same place as "All Guns Linked").
 
 Run tests with only this mod enabled in NOMM. MultiMissile changes loadouts, and SimpleWSO patches the same code.
+
+## Phase 3: crew cockpit view (v0.3.0)
+
+Taking a seat now puts your camera in the Medusa's cockpit at that seat, with the aircraft's HUD. Weapons and targeting controls come in phase 4, so you can look around but can't fire yet.
+
+### A3. One PC, AI Medusa
+1. Same setup as test A below: host a mission with a friendly AI Medusa, join the faction, don't spawn.
+2. Follow the Medusa and press **F6**. Expect:
+   - Your view moves into the **front-right seat** (WSO 1), with the pilot model visible to your left and the HUD showing the **120kw Laser** (the first station a lone WSO holds).
+   - Log lines: `[Session] WSO 1 in EW-25 Medusa, station 120kw Laser` and `[View] Entered crew cockpit view`.
+   - Mouse look and zoom work as in your own cockpit. **Switch View** goes to the external view and back.
+   - No constant rattle or shaking. That damping is on by default via `Seats.DampRemoteCockpitShake`.
+3. Press **F6**. Expect your previous spectator camera back, the HUD gone, and `[View] Left crew view; camera and HUD restored`.
+4. Seat again, then click another unit on the map. You should leave the seat ("camera left the aircraft").
+5. Seat again and let the AI Medusa get shot down. You should leave the seat, and **the wreck should still despawn about 30 s later**. If it never disappears, report it; that's the teardown trap we guard against.
+
+**If the camera is in the wrong place:** change `Seats.Wso1CameraPosition` / `Wso2CameraPosition` in the config (aircraft-local metres: X right, Y up, Z forward), then re-seat.
+
+### B3. Two or three players
+As in tests B and C below, but the WSOs now get the cockpit view. WSO 2 sits in the **rear-left** seat. When the second WSO joins, WSO 1's HUD should stay on the Laser, and WSO 2's should show the ARAD-116. The pilot's own HUD and weapon selection must not change when a WSO selects targets.
 
 ## Phase 2: networking and seating (no crew camera yet)
 

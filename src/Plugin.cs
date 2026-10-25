@@ -15,7 +15,7 @@ namespace MedusaMultiCrew
     {
         public const string Guid = "com.ryantogo.medusamulticrew";
         public const string Name = "EW-25 Medusa Multi-Crew";
-        public const string Version = "0.2.0";
+        public const string Version = "0.3.0";
 
         internal static ManualLogSource Log;
 
@@ -24,6 +24,9 @@ namespace MedusaMultiCrew
         internal static ConfigEntry<KeyCode> JoinLeaveKey;
         internal static ConfigEntry<KeyCode> AcceptKey;
         internal static ConfigEntry<KeyCode> DeclineKey;
+        internal static ConfigEntry<Vector3> Wso1CameraPosition;
+        internal static ConfigEntry<Vector3> Wso2CameraPosition;
+        internal static ConfigEntry<bool> DampRemoteCockpitShake;
         internal static ConfigEntry<bool> ReconLogging;
         internal static ConfigEntry<KeyCode> ReconDumpKey;
 
@@ -44,10 +47,18 @@ namespace MedusaMultiCrew
                 "Pilot: accept a crew join request.");
             DeclineKey = Config.Bind("Keys", "DeclineKey", KeyCode.F8,
                 "Pilot: decline a crew join request.");
+            Wso1CameraPosition = Config.Bind("Seats", "Wso1CameraPosition", new Vector3(0.43f, 1.17f, 7.42f),
+                "WSO 1 eye position in aircraft-local metres (X right, Y up, Z forward). Default: Medusa front-right seat.");
+            Wso2CameraPosition = Config.Bind("Seats", "Wso2CameraPosition", new Vector3(-0.41f, 1.19f, 5.88f),
+                "WSO 2 eye position in aircraft-local metres. Default: Medusa rear-left seat.");
+            DampRemoteCockpitShake = Config.Bind("Seats", "DampRemoteCockpitShake", true,
+                "Stop the network-jitter camera rattle in crew seats of aircraft you don't fly.");
             ReconLogging = Config.Bind("Debug", "ReconLogging", true,
                 "Log the seat, weapon station and camera layout of matching aircraft when their weapons load.");
             ReconDumpKey = Config.Bind("Debug", "ReconDumpKey", KeyCode.F10,
                 "Dump the layout of the aircraft you are currently flying to the BepInEx log.");
+
+            CrewSession.Init();
 
             harmony = new Harmony(Guid);
             harmony.PatchAll(typeof(Plugin).Assembly);
@@ -61,6 +72,7 @@ namespace MedusaMultiCrew
             {
                 CrewNet.Tick();
                 CrewClient.Update();
+                CrewSession.Update();
 
                 if (RewiredInput.GetKeyDown(ReconDumpKey.Value))
                 {
@@ -87,7 +99,13 @@ namespace MedusaMultiCrew
         private void OnDestroy()
         {
             CrewNet.ResetAll();
+            CrewSession.Reset();
             harmony?.UnpatchSelf();
+        }
+
+        internal static Vector3 SeatCameraPosition(byte seat)
+        {
+            return seat == CrewSeat.Wso2 ? Wso2CameraPosition.Value : Wso1CameraPosition.Value;
         }
 
         internal static bool IsMultiCrewAircraft(Aircraft aircraft)

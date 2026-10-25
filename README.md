@@ -8,7 +8,7 @@ A BepInEx plugin for [Nuclear Option](https://store.steampowered.com/app/2168680
 | WSO 1 | Targeting camera, radar/EW, weapon selection, target lists, firing |
 | WSO 2 | Same as WSO 1, with its own weapons and targets |
 
-**Status: early development.** Players can take WSO seats over the network (pilot accept/decline, server-checked roster, weapon split), but there's no crew camera or weapon control yet, so it isn't playable. See [docs/testing.md](docs/testing.md).
+**Status: early development.** Players can take a WSO seat (pilot accept/decline, server-checked roster, weapon split) and see the Medusa's cockpit and HUD from that seat. Weapons and targeting controls for WSOs aren't in yet, so it isn't playable. See [docs/testing.md](docs/testing.md).
 
 The host and every crew member need the plugin installed.
 
@@ -41,6 +41,8 @@ Add `-p:DeployToGame=false` to build without copying.
 - `Debug.ReconDumpKey`: dump your current aircraft's layout (default F10).
 - `General.AllowAiAircraft`: let players crew AI-flown aircraft (host setting, default on).
 - `Keys.JoinLeaveKey` / `AcceptKey` / `DeclineKey`: join or leave a seat while spectating (F6), and the pilot's accept/decline (F7/F8).
+- `Seats.Wso1CameraPosition` / `Wso2CameraPosition`: each seat's eye position in aircraft-local metres.
+- `Seats.DampRemoteCockpitShake`: stop the network-jitter rattle in crew seats (default on).
 
 ## Docs
 

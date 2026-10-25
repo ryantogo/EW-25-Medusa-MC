@@ -21,6 +21,9 @@ namespace MedusaMultiCrew.Crew
         // (aircraftNetId, seat); (0, 0) when we leave.
         public static event System.Action<uint, byte> LocalSeatChanged;
 
+        // The roster (station split) of the aircraft we're seated in changed while we stayed seated.
+        public static event System.Action SeatedRosterChanged;
+
         private static readonly Dictionary<uint, CrewRosterMsg> rosters = new Dictionary<uint, CrewRosterMsg>();
         private static readonly HashSet<byte> loggedFrameSeats = new HashSet<byte>();
         private static CrewJoinPromptMsg? prompt;
@@ -94,6 +97,10 @@ namespace MedusaMultiCrew.Crew
                 {
                     SetLocalSeat(msg.AircraftNetId, mySeat);
                     Notify($"You are {CrewSeat.Name(mySeat)}. {Plugin.JoinLeaveKey.Value} = leave seat");
+                }
+                else
+                {
+                    SeatedRosterChanged?.Invoke();
                 }
             }
             else if (SeatedAircraftNetId == msg.AircraftNetId)
@@ -177,8 +184,22 @@ namespace MedusaMultiCrew.Crew
                 Notify("You're flying this aircraft");
                 return;
             }
+            // Notify before sending: on a host the server answers inside Send (loopback), and the
+            // seat confirmation must be the last message on screen.
+            Notify(followed.Player != null ? "Asking the pilot to join..." : "Taking a WSO seat...");
             CrewNet.SendToServer(new CrewJoinRequestMsg { AircraftNetId = followed.NetId, Seat = 0 });
-            Notify("Asking the pilot to join...");
+        }
+
+        // Leave without waiting for the server (the view already decided the seat is unusable).
+        public static void LeaveSeat(string reason)
+        {
+            if (!IsSeated)
+            {
+                return;
+            }
+            CrewNet.SendToServer(new CrewLeaveMsg { AircraftNetId = SeatedAircraftNetId });
+            SetLocalSeat(0, 0);
+            Notify($"You left your seat ({reason})");
         }
 
         private static void Answer(bool accept)
