@@ -15,7 +15,7 @@ namespace MedusaMultiCrew
     {
         public const string Guid = "com.ryantogo.medusamulticrew";
         public const string Name = "EW-25 Medusa Multi-Crew";
-        public const string Version = "0.5.0";
+        public const string Version = "0.5.1";
 
         internal static ManualLogSource Log;
         internal static Plugin Instance;
@@ -30,6 +30,7 @@ namespace MedusaMultiCrew
         internal static ConfigEntry<bool> DampRemoteCockpitShake;
         internal static ConfigEntry<bool> ReconLogging;
         internal static ConfigEntry<KeyCode> ReconDumpKey;
+        internal static ConfigEntry<float> JammingPodRangeMultiplier;
 
         private Harmony harmony;
         private bool loggedUpdateError;
@@ -55,6 +56,9 @@ namespace MedusaMultiCrew
                 "WSO 2 eye position in aircraft-local metres. Default: Medusa rear-left seat.");
             DampRemoteCockpitShake = Config.Bind("Seats", "DampRemoteCockpitShake", true,
                 "Stop the network-jitter camera rattle in crew seats of aircraft you don't fly.");
+            JammingPodRangeMultiplier = Config.Bind("Jamming", "PodRangeMultiplier", 1.25f,
+                new ConfigDescription("Range multiplier for every Radar Jamming Pod (1 = vanilla). Jamming is worked out on the host, so the host's value counts. Applied when a mission loads.",
+                    new AcceptableValueRange<float>(0.5f, 3f)));
             ReconLogging = Config.Bind("Debug", "ReconLogging", true,
                 "Log the seat, weapon station and camera layout of matching aircraft when their weapons load.");
             ReconDumpKey = Config.Bind("Debug", "ReconDumpKey", KeyCode.F10,

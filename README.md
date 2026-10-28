@@ -49,6 +49,7 @@ Add `-p:DeployToGame=false` to build without copying.
 - `Keys.JoinLeaveKey` / `AcceptKey` / `DeclineKey`: join or leave a seat while spectating (F6), and the pilot's accept/decline (F7/F8).
 - `Seats.Wso1CameraPosition` / `Wso2CameraPosition`: each seat's eye position in aircraft-local metres.
 - `Seats.DampRemoteCockpitShake`: stop the network-jitter rattle in crew seats (default on).
+- `Jamming.PodRangeMultiplier`: range of every Radar Jamming Pod (default 1.25, i.e. +25%; 1 = vanilla). Jamming is worked out on the host, so the host's value counts. [Joint Fires](https://github.com/ryantogo/Joint-Fires) has the same setting and leaves it to this mod when both are installed, so the boost never stacks.
 
 ## For other mods
 
