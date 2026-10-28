@@ -24,6 +24,9 @@ namespace MedusaMultiCrew.Crew
         // The roster (station split) of the aircraft we're seated in changed while we stayed seated.
         public static event System.Action SeatedRosterChanged;
 
+        // Any roster we received (our own aircraft as pilot, or the one we're seated in).
+        public static event System.Action<uint> RosterReceived;
+
         private static readonly Dictionary<uint, CrewRosterMsg> rosters = new Dictionary<uint, CrewRosterMsg>();
         private static readonly HashSet<byte> loggedFrameSeats = new HashSet<byte>();
         private static CrewJoinPromptMsg? prompt;
@@ -135,6 +138,7 @@ namespace MedusaMultiCrew.Crew
                     Notify($"Crew: WSO 1 {SeatHolder(msg.Wso1NetId)}, WSO 2 {SeatHolder(msg.Wso2NetId)}");
                 }
             }
+            RosterReceived?.Invoke(msg.AircraftNetId);
         }
 
         // Owner side. Phase 4 applies these; for now just prove they arrive.
@@ -322,6 +326,7 @@ namespace MedusaMultiCrew.Crew
                 case JoinResult.AlreadyCrew: return "you're already in a crew seat";
                 case JoinResult.PilotLacksMod: return "the pilot doesn't have the mod";
                 case JoinResult.PilotBusy: return "the pilot is answering another request";
+                case JoinResult.NotAllowed: return "this server doesn't allow you to crew aircraft";
                 default: return result.ToString();
             }
         }

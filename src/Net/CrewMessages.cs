@@ -110,6 +110,7 @@ namespace MedusaMultiCrew.Net
         AlreadyCrew = 7,
         PilotLacksMod = 8,
         PilotBusy = 9,
+        NotAllowed = 10,
     }
 
     public enum RosterReason : byte

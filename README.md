@@ -50,6 +50,22 @@ Add `-p:DeployToGame=false` to build without copying.
 - `Seats.Wso1CameraPosition` / `Wso2CameraPosition`: each seat's eye position in aircraft-local metres.
 - `Seats.DampRemoteCockpitShake`: stop the network-jitter rattle in crew seats (default on).
 
+## For other mods
+
+`MedusaMultiCrew.MultiCrewApi` is the public API, used by the upcoming Joint Fires mod. Add `[BepInDependency("com.ryantogo.medusamulticrew")]` and reference `MedusaMultiCrew.dll`.
+
+- **Server:**
+  - `AddJoinPolicy` / `RemoveJoinPolicy` add extra seat checks (for example a whitelist). A refused player sees "this server doesn't allow you to crew aircraft".
+  - `TryGetCrew(aircraft, out wso1, out wso2)` returns who sits in each WSO seat.
+  - `ServerCrewChanged` fires on every seat change.
+- **Client:**
+  - `LocalSeat`, `LocalCrewAircraft`, `LocalCrewAircraftNetId` and `LocalSeatChanged` cover the local player's own seat.
+  - `TryGetCrewNetIds` / `RosterReceived` give the crew of your own aircraft or the one you're seated in.
+  - `ServerHasMod` says whether the host runs the mod.
+- **Both:** `IsMultiCrewAircraft`.
+
+Everything else in the assembly is internal and may change. `ApiVersion` goes up when members are added.
+
 ## Docs
 
 - [Game internals](docs/game-internals.md): how the game handles ownership, seats, weapons, targeting and networking, and where the mod hooks in.

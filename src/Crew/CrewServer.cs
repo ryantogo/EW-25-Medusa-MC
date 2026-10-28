@@ -41,6 +41,13 @@ namespace MedusaMultiCrew.Crew
         private static uint nextRequestId = 1;
         private static float nextValidate;
 
+        // Extra join checks from other mods (MultiCrewApi.AddJoinPolicy). All must allow the join.
+        internal static readonly List<System.Func<INetworkPlayer, Aircraft, byte, bool>> JoinPolicies =
+            new List<System.Func<INetworkPlayer, Aircraft, byte, bool>>();
+
+        // Raised after a seat change or disband; the aircraft may already be destroyed.
+        internal static event System.Action<uint> CrewChanged;
+
         public static void Reset()
         {
             modded.Clear();
@@ -57,6 +64,19 @@ namespace MedusaMultiCrew.Crew
                 return true;
             }
             allocation = null;
+            return false;
+        }
+
+        public static bool TryGetSeats(uint aircraftNetId, out INetworkPlayer wso1, out INetworkPlayer wso2)
+        {
+            if (crews.TryGetValue(aircraftNetId, out AircraftCrew crew))
+            {
+                wso1 = crew.Seats[CrewSeat.Wso1];
+                wso2 = crew.Seats[CrewSeat.Wso2];
+                return true;
+            }
+            wso1 = null;
+            wso2 = null;
             return false;
         }
 
@@ -342,7 +362,28 @@ namespace MedusaMultiCrew.Crew
                     }
                 }
             }
-            return null;
+            return PoliciesAllow(player, aircraft, seat) ? (JoinResult?)null : JoinResult.NotAllowed;
+        }
+
+        // A policy that throws refuses the join: these are access rules, so fail closed.
+        private static bool PoliciesAllow(INetworkPlayer player, Aircraft aircraft, byte seat)
+        {
+            foreach (System.Func<INetworkPlayer, Aircraft, byte, bool> policy in JoinPolicies.ToArray())
+            {
+                try
+                {
+                    if (!policy(player, aircraft, seat))
+                    {
+                        return false;
+                    }
+                }
+                catch (System.Exception e)
+                {
+                    Plugin.Log.LogError($"[Server] Join policy {policy.Method.DeclaringType?.Name}.{policy.Method.Name} failed; refusing the join: {e}");
+                    return false;
+                }
+            }
+            return true;
         }
 
         private static bool IsSeatFree(AircraftCrew crew, uint aircraftNetId, byte seat, uint ignoreRequestId)
@@ -374,6 +415,7 @@ namespace MedusaMultiCrew.Crew
             SendResult(player, crew.NetId, seat, JoinResult.Accepted);
             BroadcastRoster(crew, RosterReason.Update, null);
             Plugin.Log.LogInfo($"[Server] {player} seated as {CrewSeat.Name(seat)} in {aircraft.unitName}");
+            RaiseCrewChanged(crew.NetId);
         }
 
         private static void Unseat(AircraftCrew crew, INetworkPlayer player, RosterReason reason, bool notifyLeaver)
@@ -396,6 +438,7 @@ namespace MedusaMultiCrew.Crew
             }
             // The leaver gets one last roster without them so their client unseats.
             BroadcastRoster(crew, reason, notifyLeaver ? player : null);
+            RaiseCrewChanged(crew.NetId);
         }
 
         private static void Disband(AircraftCrew crew, RosterReason reason)
@@ -421,6 +464,7 @@ namespace MedusaMultiCrew.Crew
                 CrewNet.SendToPlayer(crew.Owner, msg);
             }
             Plugin.Log.LogInfo($"[Server] Crew of aircraft {crew.NetId} disbanded ({reason})");
+            RaiseCrewChanged(crew.NetId);
         }
 
         private static void Reallocate(AircraftCrew crew)
@@ -475,6 +519,18 @@ namespace MedusaMultiCrew.Crew
         }
 
         // ---- helpers ----
+
+        private static void RaiseCrewChanged(uint aircraftNetId)
+        {
+            try
+            {
+                CrewChanged?.Invoke(aircraftNetId);
+            }
+            catch (System.Exception e)
+            {
+                Plugin.Log.LogError($"[Server] CrewChanged handler failed: {e}");
+            }
+        }
 
         private static Aircraft ResolveAircraft(uint netId)
         {

@@ -16,7 +16,7 @@ namespace MedusaMultiCrew.Net
     {
         // Bump Protocol on any wire change. CrewHelloMsg / CrewHelloAckMsg layouts must never change.
         public const byte Protocol = 2;
-        public const ushort Version = 2;
+        public const ushort Version = 3;
 
         private static NetworkManagerNuclearOption manager;
         private static float nextManagerSearch;
