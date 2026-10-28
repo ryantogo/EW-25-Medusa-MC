@@ -10,8 +10,9 @@ namespace MedusaMultiCrew
     // Seats: 0 = pilot, 1 = WSO 1, 2 = WSO 2.
     public static class MultiCrewApi
     {
-        // Bumped when members are added. Check it before calling anything newer.
-        public const int ApiVersion = 1;
+        // Bumped when members are added. Check it before calling anything newer. A property, not
+        // a const, so callers read the installed version instead of the one they compiled against.
+        public static int ApiVersion => 1;
 
         public static bool IsMultiCrewAircraft(Aircraft aircraft) => Plugin.IsMultiCrewAircraft(aircraft);
 
